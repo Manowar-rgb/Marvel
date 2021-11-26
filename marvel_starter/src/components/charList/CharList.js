@@ -7,7 +7,7 @@ import ErrorMessage from '../error/ErrorMessage';
 
 export default class CharList extends Component {
     state = {
-        char: {},
+        charList: [],
         loading: true,
         error: false
     }
@@ -16,7 +16,9 @@ export default class CharList extends Component {
     
 
     componentDidMount(){
-        this.updateChar();
+        this.marvelService.getAllCharacters()
+        .then(this.onCharListLoaded)
+        .catch(this.onError)
     }
 
     onCharLoaded = (char) => {
@@ -31,30 +33,52 @@ export default class CharList extends Component {
             loading: false,
             error: true
         })
+        }
+
+    onCharListLoaded = (charList) => {
+        this.setState({
+            charList,
+            loading: false
+        })
+        }
+    renderItems(arr) {
+        const items =  arr.map((item) => {
+            let imgStyle = {'objectFit' : 'cover'};
+            if (item.thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg') {
+                imgStyle = {'objectFit' : 'unset'};
+            }
+            
+            return (
+                <li 
+                    className="char__item"
+                    key={item.id}>
+                        <img src={item.thumbnail} alt={item.name} style={imgStyle}/>
+                        <div className="char__name">{item.name}</div>
+                </li>
+            )
+        });
+        return (
+            <ul className="char__grid">
+                {items}
+            </ul>
+        )
     }
-
-
-    updateChar = () => {
-        const id = Math.floor(Math.random() * (1011400 - 1011000) + 1011000);
-        this.marvelService
-            .getCharacter(id)
-            .then(this.onCharLoaded)
-            .catch(this.onError)
-    }
-
+    
     render() {
 
-        const { char, loading, error } = this.state;
+        const {charList, loading, error} = this.state;
+        
+        const items = this.renderItems(charList);
+
         const errorMessage = error ? <ErrorMessage/> : null;
         const spinner = loading ? <Spinner/> : null;
-        const content = !(loading || errorMessage) ? <View char={char}/> : null;
+        const content = !(loading || error) ? items : null;
+
         return (
             <div className="char__list">
-                <ul className="char__grid">
                 {errorMessage}
                 {spinner}
                 {content}
-                </ul>
                 <button className="button button__main button__long">
                     <div className="inner">load more</div>
                 </button>
@@ -63,14 +87,5 @@ export default class CharList extends Component {
     }
 }
 
-const View = ({char}) => {
-    const {name, thumbnail} = char;
-    console.log(thumbnail)
-    return(
-        <li className="char__item">
-            <img src={thumbnail} alt="abyss"/>
-            <div className="char__name">{name}</div>
-        </li>
-    )
-}
+
 
